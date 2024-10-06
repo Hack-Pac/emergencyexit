@@ -15,9 +15,9 @@
     </header>
 
     <!-- Homepage Section -->
-    <main class="container mx-auto mt-12 p-6 flex-grow">
-        <section id="homepage" class="text-center">
-            <div class="card shadow-lg bg-base-100 p-8 mx-auto max-w-2xl">
+    <main class="container mx-auto mt-12 p-6 flex-grow w-full max-w-screen-xl">
+        <section id="homepage" class="text-center w-full">
+            <div class="card shadow-lg bg-base-100 p-8 mx-auto w-full max-w-3xl">
                 <h2 class="text-4xl font-bold mb-4">Welcome to Emergency Exit</h2>
                 <p class="mb-8 text-lg">Our app helps you find safe routes during wildfires by avoiding evacuation zones.</p>
                 <button onclick="showMapView()" class="btn btn-primary">Get Started</button>
@@ -42,8 +42,8 @@
         </section>
 
         <!-- Map View Section -->
-        <section id="map-view" class="hidden mt-12">
-            <div class="card shadow-lg bg-base-100 p-8 mx-auto max-w-3xl">
+        <section id="map-view" class="hidden mt-12 w-full">
+            <div class="card shadow-lg bg-base-100 p-8 mx-auto w-full max-w-4xl">
                 <h2 class="text-4xl font-bold mb-6">Find Safe Routes</h2>
                 <div class="flex flex-col items-center mb-8">
                     <input id="start-location" type="text" placeholder="Enter Start Location" class="input input-bordered w-full max-w-md mb-4">
@@ -57,7 +57,7 @@
         </section>
 
         <!-- Routing Results Section -->
-        <section id="routing-results" class="hidden mt-12">
+        <section id="routing-results" class="hidden mt-12 w-full">
             <div class="card shadow-lg bg-base-100 p-8 mx-auto max-w-3xl">
                 <h2 class="text-4xl font-bold mb-6">Routing Results</h2>
                 <p id="route-status" class="text-lg mb-4">Displaying calculated route...</p>
@@ -67,25 +67,28 @@
             </div>
         </section>
         <!-- Meet the Team Page -->
-    <section id="meet-the-team" class="text-center mt-12 mb-12">
-        <h2 class="text-4xl font-bold mb-8">Meet the Team</h2>
+    <section id="meet-the-team" class="text-center mt-12 mb-12 w-full">
+        <h2 class="text-4xl font-bold mb-8 text-primary">Meet the Team</h2>
+        <div class="mb-8">
+            <img src="https://via.placeholder.com/1600x300" alt="Group Picture" class="w-full h-auto rounded-lg shadow-lg">
+        </div>
         <div class="flex flex-col gap-8">
-            <div class="card shadow-md bg-base-100 p-6 md:w-1/2 ml-auto">
+            <div class="card shadow-md bg-base-100 p-6 w-full md:w-1/2 ml-auto">
                 <h3 class="text-2xl font-bold mb-2">Team Member 1</h3>
                 <p>Role: Lead Developer</p>
-                <img src="https://via.placeholder.com/563" alt="Team Member 1" class="w-96 h-96 mx-auto mb-4">
+                <img src="https://via.placeholder.com/150" alt="Team Member 1" class="w-1/2 mx-auto mb-4">
                 <p>Passionate about technology and helping people stay safe during emergencies.</p>
             </div>
-            <div class="card shadow-md bg-base-100 p-6 md:w-1/2 mr-auto">
+            <div class="card shadow-md bg-base-100 p-6 w-full md:w-1/2 mr-auto">
                 <h3 class="text-2xl font-bold mb-2">Team Member 2</h3>
                 <p>Role: UX Designer</p>
-                <img src="https://via.placeholder.com/563" alt="Team Member 2" class="w-96 h-96 mx-auto mb-4">
+                <img src="https://via.placeholder.com/150" alt="Team Member 2" class="w-1/2 mx-auto mb-4">
                 <p>Focused on creating an intuitive and user-friendly experience for all users.</p>
             </div>
-            <div class="card shadow-md bg-base-100 p-6 md:w-1/2 ml-auto">
+            <div class="card shadow-md bg-base-100 p-6 w-full md:w-1/2 ml-auto">
                 <h3 class="text-2xl font-bold mb-2">Team Member 3</h3>
                 <p>Role: Data Analyst</p>
-                <img src="https://via.placeholder.com/563" alt="Team Member 3" class="w-96 h-96 mx-auto mb-4">
+                <img src="https://via.placeholder.com/150" alt="Team Member 3" class="w-1/2 mx-auto mb-4">
                 <p>Analyzes real-time data to ensure accurate and up-to-date information for safe routing.</p>
             </div>
         </div>
