@@ -7,20 +7,37 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.12/dist/full.min.css" rel="stylesheet" type="text/css" />
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
 </head>
-<body class="bg-neutral">
+<body class="bg-white flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="bg-primary text-primary-content p-8 text-center">
-        <h1 class="text-5xl font-bold">Emergency Exit</h1>
+    <header class="bg-white text-base-content p-8 text-center">
+        <h1 class="text-5xl font-bold text-primary" style="-webkit-text-stroke: 1px var(--tw-color-primary);">Emergency Exit</h1>
         <p class="text-lg mt-2">Safe Directions During Wildfires</p>
     </header>
 
     <!-- Homepage Section -->
-    <main class="container mx-auto mt-12 p-6">
+    <main class="container mx-auto mt-12 p-6 flex-grow">
         <section id="homepage" class="text-center">
             <div class="card shadow-lg bg-base-100 p-8 mx-auto max-w-2xl">
                 <h2 class="text-4xl font-bold mb-4">Welcome to Emergency Exit</h2>
                 <p class="mb-8 text-lg">Our app helps you find safe routes during wildfires by avoiding evacuation zones.</p>
                 <button onclick="showMapView()" class="btn btn-primary">Get Started</button>
+            </div>
+        </section>
+
+        <section id="info-sections" class="text-center mt-12 mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="card shadow-md bg-base-100 p-6">
+                    <h3 class="text-2xl font-bold mb-2">Real-Time Updates</h3>
+                    <p>Get real-time updates about wildfire evacuation zones to help you make safe decisions.</p>
+                </div>
+                <div class="card shadow-md bg-base-100 p-6">
+                    <h3 class="text-2xl font-bold mb-2">Safe Routing</h3>
+                    <p>Our app finds routes that avoid mandatory evacuation zones, keeping you and your family safe.</p>
+                </div>
+                <div class="card shadow-md bg-base-100 p-6">
+                    <h3 class="text-2xl font-bold mb-2">Easy to Use</h3>
+                    <p>Simply enter your start and end locations to get a safe route during wildfire emergencies.</p>
+                </div>
             </div>
         </section>
 
@@ -49,23 +66,48 @@
                 </div>
             </div>
         </section>
-        
-        <!-- Color Palette Section -->
-        <section id="color-palette" class="container mx-auto mt-12 p-6">
-            <h2 class="text-3xl font-bold mb-6">Autumn Theme Color Palette</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="p-8 bg-primary text-primary-content text-center rounded-lg">Primary</div>
-                <div class="p-8 bg-primary-focus text-primary-content text-center rounded-lg">Primary Focus</div>
-                <div class="p-8 bg-secondary text-secondary-content text-center rounded-lg">Secondary</div>
-                <div class="p-8 bg-secondary-focus text-secondary-content text-center rounded-lg">Secondary Focus</div>
-                <div class="p-8 bg-accent text-accent-content text-center rounded-lg">Accent</div>
-                <div class="p-8 bg-neutral text-neutral-content text-center rounded-lg">Neutral</div>
-                <div class="p-8 bg-base-100 text-base-content text-center rounded-lg">Base 100</div>
-                <div class="p-8 bg-base-200 text-base-content text-center rounded-lg">Base 200</div>
-                <div class="p-8 bg-base-300 text-base-content text-center rounded-lg">Base 300</div>
+        <!-- Meet the Team Page -->
+    <section id="meet-the-team" class="text-center mt-12 mb-12">
+        <h2 class="text-4xl font-bold mb-8">Meet the Team</h2>
+        <div class="flex flex-col gap-8">
+            <div class="card shadow-md bg-base-100 p-6 md:w-1/2 ml-auto">
+                <h3 class="text-2xl font-bold mb-2">Team Member 1</h3>
+                <p>Role: Lead Developer</p>
+                <img src="https://via.placeholder.com/563" alt="Team Member 1" class="w-96 h-96 mx-auto mb-4">
+                <p>Passionate about technology and helping people stay safe during emergencies.</p>
             </div>
-        </section>
-    </main>
+            <div class="card shadow-md bg-base-100 p-6 md:w-1/2 mr-auto">
+                <h3 class="text-2xl font-bold mb-2">Team Member 2</h3>
+                <p>Role: UX Designer</p>
+                <img src="https://via.placeholder.com/563" alt="Team Member 2" class="w-96 h-96 mx-auto mb-4">
+                <p>Focused on creating an intuitive and user-friendly experience for all users.</p>
+            </div>
+            <div class="card shadow-md bg-base-100 p-6 md:w-1/2 ml-auto">
+                <h3 class="text-2xl font-bold mb-2">Team Member 3</h3>
+                <p>Role: Data Analyst</p>
+                <img src="https://via.placeholder.com/563" alt="Team Member 3" class="w-96 h-96 mx-auto mb-4">
+                <p>Analyzes real-time data to ensure accurate and up-to-date information for safe routing.</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+    <!-- Footer -->
+    <footer class="bg-base-200 text-base-content p-6 flex justify-between items-center mt-auto">
+        <p>$1</p>
+        <div class="flex items-center">
+            <a href="https://github.com" target="_blank" class="mx-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 fill-current text-gray-800 hover:text-primary" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.207 11.387.6.111.793-.261.793-.579 0-.285-.01-1.041-.015-2.043-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.744.083-.729.083-.729 1.205.085 1.839 1.238 1.839 1.238 1.07 1.835 2.807 1.305 3.492.998.108-.775.419-1.305.762-1.605-2.665-.303-5.467-1.333-5.467-5.93 0-1.31.469-2.381 1.235-3.221-.123-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23.957-.266 1.983-.399 3.003-.403 1.02.004 2.046.137 3.005.403 2.289-1.553 3.295-1.23 3.295-1.23.654 1.653.242 2.873.12 3.176.77.84 1.235 1.911 1.235 3.221 0 4.61-2.807 5.624-5.48 5.921.429.369.823 1.096.823 2.207 0 1.592-.015 2.875-.015 3.268 0 .32.192.694.8.576C20.565 21.796 24 17.303 24 12 24 5.373 18.627 0 12 0z" />
+                </svg>
+            </a>
+            <a href="https://youtube.com" target="_blank" class="mx-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 fill-current text-gray-800 hover:text-primary" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a2.998 2.998 0 00-2.117-2.12C19.393 3.5 12 3.5 12 3.5s-7.393 0-9.381.566a2.998 2.998 0 00-2.117 2.12C.002 8.174 0 12 0 12s.002 3.826.502 5.814a2.998 2.998 0 002.117 2.12C4.607 20.5 12 20.5 12 20.5s7.393 0 9.381-.566a2.998 2.998 0 002.117-2.12c.5-1.988.5-5.814.5-5.814s0-3.826-.5-5.814zM9.75 15.5v-7l6 3.5-6 3.5z" />
+                </svg>
+            </a>
+        </div>
+    </footer>
 
     <script>
         function showMapView() {
