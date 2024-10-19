@@ -1,20 +1,14 @@
-from flask import Flask, render_template, request, jsonify
 import requests
 import json
 import time
 import logging
 from geopy.distance import geodesic
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
-
 FIRE_PROXIMITY_THRESHOLD_MILES = 0.1
 
 fake_fire_coords = [
     (34.104499, -117.199153)  # Fake fire coordinate for testing
 ]
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def geocode_address(address):
     NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search'
@@ -31,13 +25,12 @@ def geocode_address(address):
             },
             timeout=10
         )
-        logging.debug(f"Geocode response for '{address}': {response.text}")
     except requests.RequestException as e:
-        logging.error(f"Network error while geocoding address '{address}': {e}")
+        print(f"Network error: {e}")
         return None
 
     if response.status_code != 200:
-        logging.error(f"Failed to geocode address '{address}'. Status Code: {response.status_code}")
+        print(f"Error: Failed to geocode address '{address}'. Status Code: {response.status_code}")
         return None
 
     data = response.json()
@@ -45,7 +38,7 @@ def geocode_address(address):
         coords = data[0]
         return [float(coords['lat']), float(coords['lon'])]
     else:
-        logging.error(f"No results found for address '{address}'.")
+        print(f"Error: No results found for address '{address}'.")
         return None
 
 def get_current_incidents():
@@ -54,7 +47,6 @@ def get_current_incidents():
     try:
         response = requests.get(API_URL)
         response.raise_for_status()
-        logging.debug(f"Incidents response: {response.text}")
         incidents = response.json()
         logging.info(f"Fetched {len(incidents)} incidents.")
         return incidents
@@ -75,11 +67,9 @@ def is_near_fire(coord, fires, max_distance_miles=FIRE_PROXIMITY_THRESHOLD_MILES
     for fire_coord in fires:
         try:
             distance = geodesic(coord, fire_coord).miles
-            logging.debug(f"Distance from {coord} to fire at {fire_coord}: {distance} miles")
             if distance <= max_distance_miles:
                 return True
-        except ValueError as e:
-            logging.error(f"Error calculating distance: {e}")
+        except ValueError:
             continue
     return False
 
@@ -107,10 +97,9 @@ def get_route(start_coords, end_coords, avoid_polygons=None, route_differentiati
             timeout=15
         )
         response.raise_for_status()
-        logging.debug(f"Route API response: {response.text}")
         return response.json()
     except requests.RequestException as e:
-        logging.error(f"Network error while getting directions: {e}")
+        print(f"Network error while getting directions: {e}")
         return None
 
 def create_avoidance_box(center_coord, distance_miles=1):
@@ -128,98 +117,59 @@ def create_avoidance_box(center_coord, distance_miles=1):
 ORS_API_KEY = '5b3ce3597851110001cf624827e2ea9c22414c99883a500d4dfb27e8'
 ORS_BASE_URL = 'https://api.openrouteservice.org/v2/directions/driving-car'
 
-@app.route('/calculate_route', methods=['POST'])
-def calculate_route():
-    data = request.get_json()
-    start_address = data.get('start_address')
-    end_address = data.get('end_address')
+start_address = '11 Lindberg, Irvine CA'
+end_address = '7701 Church St, Highland, CA 92346'
 
+MAX_RETRIES = 3
+for i in range(MAX_RETRIES):
     start_coords = geocode_address(start_address)
     end_coords = geocode_address(end_address)
+    if start_coords and end_coords:
+        break
+    else:
+        print(f"Retrying... ({i + 1}/{MAX_RETRIES})")
+        time.sleep(2)
 
-    if not start_coords or not end_coords:
-        logging.error("Unable to geocode one or both addresses.")
-        return jsonify({'error': 'Unable to geocode one or both addresses.'}), 400
-
+if not start_coords or not end_coords:
+    print('Error: Unable to geocode one or both addresses.')
+else:
     incidents = get_current_incidents()
     fires = get_fire_coordinates(incidents)
 
-    if is_near_fire(end_coords, fires, max_distance_miles=1):
-        logging.warning("The destination is within 10 miles of an active fire.")
-        return jsonify({'warning': 'The destination is within 10 miles of an active fire. Proceed with caution or consider an alternative destination.'}), 200
+    if is_near_fire(end_coords, fires, max_distance_miles=10):
+        print("Warning: The destination is within 10 miles of an active fire.")
+        print("Proceed with caution or consider an alternative destination.")
 
     avoid_polygons = []
     processed_coords = set()
     num_routes_to_generate = 50
     current_route_differentiation = 0.5
     while num_routes_to_generate > 0:
-        logging.info(f"Attempting to generate route. Attempts remaining: {num_routes_to_generate}")
         directions = get_route(start_coords, end_coords, avoid_polygons, current_route_differentiation)
         if not directions:
-            logging.error("Unable to get route directions.")
-            return jsonify({'error': 'Unable to get route directions.'}), 500
+            print("Error: Unable to get route directions.")
+            break
 
         route_passes_near_fire = False
         for feature in directions.get('features', []):
             if 'geometry' in feature:
                 for coord in feature['geometry']['coordinates']:
                     if len(coord) >= 2 and tuple(coord) not in processed_coords and is_near_fire((coord[1], coord[0]), fires):
-                        logging.warning(f"Route passes near an active fire at coordinates: {coord}")
+                        print(f"Route passes near an active fire at coordinates: {coord}")
                         route_passes_near_fire = True
                         processed_coords.add(tuple(coord))
                         avoid_box = create_avoidance_box((coord[1], coord[0]))
-                        avoid_polygons = [avoid_box]  # Use only the latest avoid box for rerouting
+                        avoid_polygons.append(avoid_box)
                         break
                 if route_passes_near_fire:
                     break
 
         if route_passes_near_fire:
-            logging.info("Recalculating route to avoid active fires...")
+            print("Recalculating route to avoid active fires...")
             time.sleep(2)  # Delay before recalculating
             num_routes_to_generate -= 1
             current_route_differentiation += 5  # Increase differentiation to try a more diverse route
         else:
-            logging.info("Safe route found.")
-            logging.debug(f"Safe route directions: {json.dumps(directions, indent=2)}")
-            # Adjust response to match the expected GeoJSON format for map rendering
-            return jsonify({
-                "type": "FeatureCollection",
-                "features": directions.get('features', [])
-            }), 200
-
-    logging.error("Unable to find a safe route after multiple attempts.")
-    return jsonify({'error': 'Unable to find a safe route after multiple attempts.'}), 500
-
-@app.route('/route_data', methods=['GET'])
-def route_data():
-    # For simplicity, this function will simulate previously calculated route data.
-    # In practice, you could store route data in a session or database and retrieve it here.
-    return jsonify({
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [
-                        [-117.768524, 33.70186],
-                        [-117.768471, 33.701877],
-                        [-117.768429, 33.701911],
-                        [-117.768026, 33.702314],
-                        [-117.767803, 33.702449]
-                    ]
-                }
-            }
-        ]
-    })
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/map')
-def map_view():
-    return render_template('map.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+            print("Safe route found.")
+            print(json.dumps(directions, indent=2))
+            break

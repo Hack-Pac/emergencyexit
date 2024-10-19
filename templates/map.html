@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="autumn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Exit - Map View</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.12/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body class="bg-white flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white text-base-content p-8 text-center">
+        <h1 class="text-5xl font-bold text-primary" style="-webkit-text-stroke: 1px var(--tw-color-primary);">Emergency Exit - Safe Route Map</h1>
+        <p class="text-lg mt-2">View Safe Routes During Wildfires</p>
+        <button onclick="goBack()" class="btn btn-secondary mt-4">Back to Home</button>
+    </header>
+
+    <!-- Input Section -->
+    <main class="container mx-auto mt-12 p-6 flex-grow w-full max-w-screen-xl">
+        <div class="card shadow-lg bg-base-100 p-8 mx-auto w-full max-w-4xl mb-6">
+            <h2 class="text-4xl font-bold mb-6">Enter Addresses</h2>
+            <div class="flex flex-col items-center mb-8">
+                <input id="start-address" type="text" placeholder="Enter Start Location" class="input input-bordered w-full max-w-md mb-4">
+                <input id="end-address" type="text" placeholder="Enter End Location" class="input input-bordered w-full max-w-md mb-4">
+                <button onclick="calculateRoute()" class="btn btn-primary">Calculate Route</button>
+            </div>
+        </div>
+        
+        <!-- Map Section -->
+        <div class="card shadow-lg bg-base-100 p-8 mx-auto w-full max-w-4xl">
+            <h2 class="text-4xl font-bold mb-6">Route Map</h2>
+            <div id="map" class="w-full h-96 bg-base-300 rounded-lg mb-6"></div>
+        </div>
+    </main>
+
+    <script>
+        function goBack() {
+            window.location.href = "/";
+        }
+
+        function calculateRoute() {
+            const startAddress = document.getElementById("start-address").value;
+            const endAddress = document.getElementById("end-address").value;
+
+            // Fetch the route data from the server
+            fetch('/calculate_route', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    start_address: startAddress,
+                    end_address: endAddress
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Initialize the map
+                const map = L.map('map').setView([36.7783, -119.4179], 6); // Centered on California
+
+                // Add OpenStreetMap tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                // Extract route coordinates and add them to the map
+                const coordinates = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                const routeLine = L.polyline(coordinates, { color: 'blue' }).addTo(map);
+                map.fitBounds(routeLine.getBounds());
+            })
+            .catch(error => {
+                console.error('Error fetching route:', error);
+            });
+        }
+    </script>
+</body>
+</html>
