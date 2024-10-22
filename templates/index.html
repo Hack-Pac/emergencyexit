@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="min-h-screen bg-base-100">
     <!-- Navbar -->
@@ -117,26 +118,84 @@
                 <div class="card-body">
                     <h3 class="card-title">Monthly Fire Incidents</h3>
                     <div class="w-full h-64 bg-base-200 rounded-box flex items-center justify-center">
-                        <!-- Placeholder for chart -->
-                        <div class="text-center text-base-content/50">
-                            Monthly incident data visualization
-                        </div>
+                        <canvas id="monthlyFireIncidentsChart"></canvas>
                     </div>
                 </div>
             </div>
+            <script>
+                // FOR PLACEHOLDER DEMO ONLY:
 
+                // Monthly Fire Incidents Chart
+                const ctxFireIncidents = document.getElementById('monthlyFireIncidentsChart').getContext('2d');
+                const fireIncidentsChart = new Chart(ctxFireIncidents, {
+                    type: 'bar',
+                    data: {
+                        labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct (so far)'],
+                        datasets: [{
+                            label: 'Fire Incidents',
+                            data: [ 62, 136, 177, 88, 53, 34],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            </script>
+            
             <!-- Risk Assessment Card -->
             <div class="card bg-base-100 shadow-xl">
                 <div class="card-body">
                     <h3 class="card-title">Risk Assessment</h3>
-                    <div class="w-full h-64 bg-base-200 rounded-box flex items-center justify-center">
-                        <!-- Placeholder for chart -->
-                        <div class="text-center text-base-content/50">
-                            Risk assessment visualization
-                        </div>
+                    <div class="w-full h-64 bg-base-200 rounded-box flex items-center justify-center p-4">
+                        <canvas id="simpleRiskChart"></canvas>
                     </div>
                 </div>
             </div>
+            <script>
+                // FOR PLACEHOLDER DEMO ONLY
+
+                // Simple Risk Assessment Doughnut Chart
+                const ctxSimpleRisk = document.getElementById('simpleRiskChart').getContext('2d');
+                const simpleRiskChart = new Chart(ctxSimpleRisk, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                        datasets: [{
+                            label: 'Risk Level',
+                            data: [55, 35, 10], // Adjust these values based on the actual risk assessment
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.2)',  // Low Risk: light green
+                                'rgba(255, 205, 86, 0.2)',  // Medium Risk: yellow
+                                'rgba(255, 99, 132, 0.2)'   // High Risk: light red
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',   // Low Risk
+                                'rgba(255, 205, 86, 1)',   // Medium Risk
+                                'rgba(255, 99, 132, 1)'    // High Risk
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            </script>
+            
         </div>
     </section>
         <!-- Statistics Section -->
@@ -148,7 +207,7 @@
                 <div class="stats shadow">
                     <div class="stat">
                         <div class="stat-title">Total Fires</div>
-                        <div class="stat-value text-primary" id="totalFiresCounter">0</div>
+                        <h4> <div class="counter stat-value text-primary" id="counter1">0</div></h4>
                         <div class="stat-desc">In California this year</div>
                     </div>
                 </div>
@@ -156,7 +215,7 @@
                 <div class="stats shadow">
                     <div class="stat">
                         <div class="stat-title">Acres Burned</div>
-                        <div class="stat-value text-primary" id="acresBurnedCounter">0</div>
+                        <h4> <div class="counter stat-value text-primary" id="counter2">0</div></h4>
                         <div class="stat-desc">Total area affected</div>
                     </div>
                 </div>
@@ -164,18 +223,77 @@
                 <div class="stats shadow">
                     <div class="stat">
                         <div class="stat-title">Active Fires</div>
-                        <div class="stat-value text-primary" id="activeFiresCounter">0</div>
+                        <h4> <div class="counter stat-value text-primary" id="counter3">0</div></h4>
                         <div class="stat-desc">Currently burning</div>
                     </div>
                 </div>
             </div>
+            <script> // DO NOT CHANGE 
+                function reveal() {
+                var reveals = document.querySelectorAll(".reveal");
+                for (var i = 0; i < reveals.length; i++) {
+                    var windowHeight = window.innerHeight;
+                    var elementTop = reveals[i].getBoundingClientRect().top;
+                    var elementVisible = 150;
+                    if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                    } else {
+                    reveals[i].classList.remove("active");
+                    }
+                }
+                }
+                window.addEventListener("scroll", reveal);
+
+                // To check the scroll position on page load
+                reveal();
+
+                let counts = setInterval(updated);
+                        let upto = 0;
+                        function updated() {
+                            let count = document.getElementById("counter");
+                            count.innerHTML = ++upto;
+                            if (upto === 500) {
+                                clearInterval(counts);
+                            }
+                        }
+                        // animate
+                    function animateCounter(targetId, targetValue, duration) {
+                    let startValue = 0;
+                    const counterElement = document.getElementById(targetId);
+                    const increment = targetValue / (duration / 16); // Assuming 60 frames per second
+
+                    function updateCounter() {
+                    startValue += increment;
+                    counterElement.textContent = Math.round(startValue);
+
+                    if (startValue < targetValue) {
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        counterElement.textContent = targetValue;
+                    }
+                    }
+
+                    updateCounter();
+                }
+
+                // Usage
+                // THIS WAS CODED FOR LIVE DEMO RECORDING TIMING
+                animateCounter('counter1', 487937, 5000); // number, milliseconds to get there -- FIRES TOTAL
+                animateCounter('counter2', 1013960, 5000); // number, milliseconds to get there -- ACRES TOTAL
+                animateCounter('counter3', 8, 5000); // number, milliseconds to get there -- ACTIVE FIRES
+
+                $('#sponsor-carousel').carousel({
+                interval: 3000,
+                cycle: true
+                }); 
+            </script>
         </section>
-        <section id="meet-the-team" class="container mx-auto px-4 py-16">
+        <section id="meet-the-team" class="container mx-auto px-4 ">
             <div class="text-center mb-16">
                 <h2 class="text-4xl font-bold text-primary mb-4">Meet the Team</h2>
                 <div class="w-24 h-1 bg-primary mx-auto rounded-full"></div>
             </div>
-        
+<!--         
             <div class="mb-16 mx-auto">
                 <img 
                     src="/img/teampic.jpg" 
@@ -185,8 +303,8 @@
                     height="720"
                 >
             </div>
-        
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+         -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 my-16">
                 <div class="group hover:transform hover:scale-105 transition-all duration-300">
                     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                         <div class="relative">
@@ -289,15 +407,6 @@
             }
             prevScrollpos = currentScrollPos;
         }
-        ScrollTrigger.create({
-            trigger: "#total-fires",
-            start: "top bottom-=100",
-            onEnter: () => {
-                totalFiresCounter.start();
-                acresBurnedCounter.start();
-                activeFiresCounter.start();
-            }
-        });
         // Smooth scroll for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -357,40 +466,10 @@
             });
         });
 
-        // Feature cards animation
-        gsap.utils.toArray('.feature-card').forEach((card, i) => {
-            gsap.to(card, {
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top bottom-=100",
-                    toggleActions: "play none none reverse"
-                },
-                opacity: 1,
-                y: 0,
-                duration: 0.8,
-                delay: i * 0.2
-            });
-        });
-
         function showMapView() {
             window.location.href = "/templates/map.html";
         }
 
-                // Initialize CountUp.js instances
-                const totalFiresCounter = new CountUp('total-fires', 7241, {
-            duration: 2.5,
-            useEasing: true
-        });
-        
-        const acresBurnedCounter = new CountUp('acres-burned', 142876, {
-            duration: 2.5,
-            useEasing: true
-        });
-        
-        const activeFiresCounter = new CountUp('active-fires', 95, {
-            duration: 2.5,
-            useEasing: true
-        });
 
     </script>
 </body>
