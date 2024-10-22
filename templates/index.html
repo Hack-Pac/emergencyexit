@@ -15,7 +15,7 @@
     </header>
 
     <!-- Homepage Section -->
-    <main class="container mx-auto mt-12 p-6 flex-grow w-full max-w-screen-xl">
+    <main class="container mx-auto p-6 flex-grow w-full max-w-screen-xl">
         <section id="homepage" class="text-center w-full">
             <div class="card shadow-lg bg-base-100 p-8 mx-auto w-full max-w-3xl">
                 <h2 class="text-4xl font-bold mb-4">Welcome to Emergency Exit</h2>
@@ -70,7 +70,8 @@
     <section id="meet-the-team" class="text-center mt-12 mb-12 w-full">
         <h2 class="text-4xl font-bold mb-8 text-primary">Meet the Team</h2>
         <div class="mb-8">
-            <img src="https://via.placeholder.com/1600x300" alt="Group Picture" class="w-full h-auto rounded-lg shadow-lg">
+            <!-- ADDED "/" before since liveserver needs relative paths to work -->
+            <img src="/img/teampic.jpg" class="team-img" width="1920" height="1080">
         </div>
         <div class="flex flex-col gap-8">
             <div class="card shadow-md bg-base-100 p-6 w-full md:w-1/2 ml-auto">
@@ -114,7 +115,7 @@
 
     <script>
         function showMapView() {
-            window.location.href = "/map";
+            window.location.href = "/templates/map.html";
         }
     </script>
 </body>
