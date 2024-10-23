@@ -32,10 +32,17 @@
         <div class="card shadow-lg bg-base-100 p-8 mx-auto w-full max-w-4xl">
             <h2 class="text-4xl font-bold mb-6">Route Map</h2>
             <div id="map" class="w-full h-96 bg-base-300 rounded-lg mb-6"></div>
+            <button onclick="toggleInvalidRoutes()" class="btn btn-secondary">Show/Hide Invalid Routes</button>
         </div>
     </main>
 
     <script>
+        let map;
+        let routeLine;
+        let invalidRouteLines = [];
+        let invalidRoutesVisible = false;
+        let fireMarkers = [];
+
         function goBack() {
             window.location.href = "/";
         }
@@ -62,21 +69,88 @@
                     return;
                 }
 
-                // Initialize the map
-                const map = L.map('map').setView([36.7783, -119.4179], 6); // Centered on California
+                // Initialize the map if it hasn't been initialized yet
+                if (!map) {
+                    map = L.map('map').setView([36.7783, -119.4179], 6); // Centered on California
 
-                // Add OpenStreetMap tile layer
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
+                    // Add OpenStreetMap tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+                } else {
+                    // Clear previous routes and markers from the map
+                    if (routeLine) {
+                        map.removeLayer(routeLine);
+                    }
+                    invalidRouteLines.forEach(line => map.removeLayer(line));
+                    invalidRouteLines = [];
+                    fireMarkers.forEach(marker => map.removeLayer(marker));
+                    fireMarkers = [];
+                }
 
                 // Extract route coordinates and add them to the map
-                const coordinates = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                const routeLine = L.polyline(coordinates, { color: 'blue' }).addTo(map);
-                map.fitBounds(routeLine.getBounds());
+                if (data.features && data.features.length > 0) {
+                    const coordinates = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    if (coordinates.length > 1) {
+                        routeLine = L.polyline(coordinates, { color: 'blue', weight: 4, opacity: 1 }).addTo(map);
+                        map.fitBounds(routeLine.getBounds());
+                        console.log('Valid route added to map:', coordinates);
+                    } else {
+                        console.log('No valid coordinates found for the route.');
+                    }
+                } else {
+                    console.log('No valid route found in data.');
+                }
+
+                // Add invalid routes to the map
+                if (data.invalid_routes) {
+                    data.invalid_routes.forEach((invalidRoute, index) => {
+                        if (invalidRoute.geometry && invalidRoute.geometry.type === "LineString") {
+                            const invalidCoordinates = invalidRoute.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                            if (invalidCoordinates.length > 1) {
+                                const invalidRouteLine = L.polyline(invalidCoordinates, { color: 'red', weight: 2, opacity: 0.6, dashArray: '5, 10' });
+                                invalidRouteLines.push(invalidRouteLine);
+                                console.log(`Invalid route #${index + 1} added to map:`, invalidCoordinates);
+                            }
+                        }
+                    });
+                }
+
+                // Add fire locations to the map
+                if (data.fires) {
+                    data.fires.forEach((fire, index) => {
+                        if (fire.geometry && fire.geometry.type === "Point") {
+                            const fireCoords = [fire.geometry.coordinates[1], fire.geometry.coordinates[0]];
+                            if (fireCoords[0] && fireCoords[1]) {
+                                const fireMarker = L.marker(fireCoords, { icon: L.icon({
+                                    iconUrl: 'https://commons.wikimedia.org/wiki/File:Fire-dynamic-color.png',
+                                    iconSize: [32, 32],
+                                    iconAnchor: [16, 16]
+                                }) }).addTo(map);
+                                fireMarkers.push(fireMarker);
+                                console.log(`Fire #${index + 1} added to map at:`, fireCoords);
+                            }
+                        }
+                    });
+                }
             })
             .catch(error => {
                 console.error('Error fetching route:', error);
+            });
+        }
+
+        function toggleInvalidRoutes() {
+            if (!map) return;
+
+            invalidRoutesVisible = !invalidRoutesVisible;
+            invalidRouteLines.forEach((line, index) => {
+                if (invalidRoutesVisible) {
+                    line.addTo(map);
+                    console.log(`Invalid route #${index + 1} displayed on map.`);
+                } else {
+                    map.removeLayer(line);
+                    console.log(`Invalid route #${index + 1} removed from map.`);
+                }
             });
         }
     </script>

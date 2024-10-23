@@ -1,1 +1,11 @@
 .venv/
+north-america-west.osm.pbf
+test1.py
+test2.py
+test3.py
+visualize_road_network.log
+socal.graphml
+smaller-area.osm.pbf
+smaller-area.osm
+route_cache.json
+road_network.graphml

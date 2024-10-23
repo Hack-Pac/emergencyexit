@@ -4,13 +4,15 @@ import json
 import time
 import logging
 from geopy.distance import geodesic
+import os
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 FIRE_PROXIMITY_THRESHOLD_MILES = 0.1
+CACHE_FILE = 'route_cache.json'
 
 fake_fire_coords = [
-    (34.104499, -117.199153)  # Fake fire coordinate for testing
+    (33.721286, -117.7709814)  # Fake fire coordinate for testing
 ]
 
 # Set up logging
@@ -83,56 +85,72 @@ def is_near_fire(coord, fires, max_distance_miles=FIRE_PROXIMITY_THRESHOLD_MILES
             continue
     return False
 
-def get_route(start_coords, end_coords, avoid_polygons=None, route_differentiation=0.5):
+def get_routes(start_coords, end_coords, num_alternatives=10, deviation_factor=2):
     try:
+        GOOGLE_MAPS_API_URL = 'https://maps.googleapis.com/maps/api/directions/json'
+        GOOGLE_MAPS_API_KEY = 'AIzaSyCmKuPaMS9lHzKSd2r1nVFlvoJ6Fd8YFTQ'  # Replace with your Google Maps API key
         params = {
-            'api_key': ORS_API_KEY,
-            'start': f"{start_coords[1]},{start_coords[0]}",
-            'end': f"{end_coords[1]},{end_coords[0]}",
-            'alternative_routes': json.dumps({
-                'share_factor': route_differentiation,
-                'target_count': 1
-            })
+            'origin': f"{start_coords[0]},{start_coords[1]}",
+            'destination': f"{end_coords[0]},{end_coords[1]}",
+            'key': GOOGLE_MAPS_API_KEY,
+            'avoid': 'tolls,highways',  # You can add more avoidance options here
+            'alternatives': 'true'
         }
-        if avoid_polygons:
-            params['options'] = json.dumps({
-                "avoid_polygons": {
-                    "type": "Polygon",
-                    "coordinates": [avoid_polygons]
-                }
-            })
         response = requests.get(
-            ORS_BASE_URL,
+            GOOGLE_MAPS_API_URL,
             params=params,
             timeout=15
         )
         response.raise_for_status()
         logging.debug(f"Route API response: {response.text}")
-        return response.json()
+        routes_data = response.json()
+
+        # Implementing the Stack Overflow workaround idea
+        routes = routes_data.get('routes', [])
+        valid_routes = []
+        for route in routes:
+            route_coordinates = [
+                (step['end_location']['lat'], step['end_location']['lng'])
+                for leg in route.get('legs', [])
+                for step in leg.get('steps', [])
+            ]
+            route_passes_near_fire = any(
+                is_near_fire((coord[0], coord[1]), get_fire_coordinates(get_current_incidents()))
+                for coord in route_coordinates
+            )
+            if not route_passes_near_fire:
+                valid_routes.append(route)
+            else:
+                # Add alternate points to avoid the fire and re-run directions
+                for fire_coord in fake_fire_coords:
+                    params['waypoints'] = f"{fire_coord[0]},{fire_coord[1]}"
+                    response = requests.get(GOOGLE_MAPS_API_URL, params=params, timeout=15)
+                    response.raise_for_status()
+                    logging.debug(f"Re-routing API response: {response.text}")
+                    rerouted_data = response.json()
+                    rerouted_routes = rerouted_data.get('routes', [])
+                    for rerouted_route in rerouted_routes:
+                        rerouted_coordinates = [
+                            (step['end_location']['lat'], step['end_location']['lng'])
+                            for leg in rerouted_route.get('legs', [])
+                            for step in leg.get('steps', [])
+                        ]
+                        if not any(is_near_fire((coord[0], coord[1]), get_fire_coordinates(get_current_incidents())) for coord in rerouted_coordinates):
+                            valid_routes.append(rerouted_route)
+                            break
+
+        return {'routes': valid_routes}
     except requests.RequestException as e:
         logging.error(f"Network error while getting directions: {e}")
         return None
-
-def create_avoidance_box(center_coord, distance_miles=1):
-    delta_lat = distance_miles / 69.0  # Approximate miles per degree latitude
-    delta_lon = distance_miles / (69.0 * abs(center_coord[0]))  # Adjust for longitude
-    lat, lon = center_coord
-    return [
-        [lon - delta_lon, lat - delta_lat],
-        [lon + delta_lon, lat - delta_lat],
-        [lon + delta_lon, lat + delta_lat],
-        [lon - delta_lon, lat + delta_lat],
-        [lon - delta_lon, lat - delta_lat]
-    ]
-
-ORS_API_KEY = '5b3ce3597851110001cf624827e2ea9c22414c99883a500d4dfb27e8'
-ORS_BASE_URL = 'https://api.openrouteservice.org/v2/directions/driving-car'
 
 @app.route('/calculate_route', methods=['POST'])
 def calculate_route():
     data = request.get_json()
     start_address = data.get('start_address')
     end_address = data.get('end_address')
+    num_alternatives = data.get('num_alternatives', 10)  # Allow customization via the request
+    deviation_factor = data.get('deviation_factor', 2)  # Allow customization via the request
 
     start_coords = geocode_address(start_address)
     end_coords = geocode_address(end_address)
@@ -148,70 +166,97 @@ def calculate_route():
         logging.warning("The destination is within 10 miles of an active fire.")
         return jsonify({'warning': 'The destination is within 10 miles of an active fire. Proceed with caution or consider an alternative destination.'}), 200
 
-    avoid_polygons = []
-    processed_coords = set()
-    num_routes_to_generate = 50
-    current_route_differentiation = 0.5
-    while num_routes_to_generate > 0:
-        logging.info(f"Attempting to generate route. Attempts remaining: {num_routes_to_generate}")
-        directions = get_route(start_coords, end_coords, avoid_polygons, current_route_differentiation)
-        if not directions:
-            logging.error("Unable to get route directions.")
-            return jsonify({'error': 'Unable to get route directions.'}), 500
+    directions = get_routes(start_coords, end_coords, num_alternatives=num_alternatives, deviation_factor=deviation_factor)
+    if not directions:
+        logging.error("Unable to get route directions.")
+        return jsonify({'error': 'Unable to get route directions.'}), 500
 
-        route_passes_near_fire = False
-        for feature in directions.get('features', []):
-            if 'geometry' in feature:
-                for coord in feature['geometry']['coordinates']:
-                    if len(coord) >= 2 and tuple(coord) not in processed_coords and is_near_fire((coord[1], coord[0]), fires):
-                        logging.warning(f"Route passes near an active fire at coordinates: {coord}")
-                        route_passes_near_fire = True
-                        processed_coords.add(tuple(coord))
-                        avoid_box = create_avoidance_box((coord[1], coord[0]))
-                        avoid_polygons = [avoid_box]  # Use only the latest avoid box for rerouting
-                        break
-                if route_passes_near_fire:
-                    break
+    valid_routes = directions.get('routes', [])
+    invalid_routes = []
+
+    for route in directions.get('routes', []):
+        route_coordinates = [
+            (step['end_location']['lat'], step['end_location']['lng'])
+            for leg in route.get('legs', [])
+            for step in leg.get('steps', [])
+        ]
+        route_passes_near_fire = any(
+            is_near_fire((coord[0], coord[1]), fires)
+            for coord in route_coordinates
+        )
 
         if route_passes_near_fire:
-            logging.info("Recalculating route to avoid active fires...")
-            time.sleep(2)  # Delay before recalculating
-            num_routes_to_generate -= 1
-            current_route_differentiation += 5  # Increase differentiation to try a more diverse route
+            logging.warning("Route passes near an active fire.")
+            invalid_routes.append(route)
         else:
             logging.info("Safe route found.")
-            logging.debug(f"Safe route directions: {json.dumps(directions, indent=2)}")
-            # Adjust response to match the expected GeoJSON format for map rendering
-            return jsonify({
-                "type": "FeatureCollection",
-                "features": directions.get('features', [])
-            }), 200
 
-    logging.error("Unable to find a safe route after multiple attempts.")
-    return jsonify({'error': 'Unable to find a safe route after multiple attempts.'}), 500
+    # Save all routes to cache
+    with open(CACHE_FILE, 'w') as cache_file:
+        json.dump({
+            "valid_routes": valid_routes,
+            "invalid_routes": invalid_routes
+        }, cache_file, indent=2)
 
-@app.route('/route_data', methods=['GET'])
-def route_data():
-    # For simplicity, this function will simulate previously calculated route data.
-    # In practice, you could store route data in a session or database and retrieve it here.
-    return jsonify({
-        "type": "FeatureCollection",
-        "features": [
-            {
+    if valid_routes:
+        # Convert the valid route to a GeoJSON-like structure for use in Leaflet
+        features = []
+        for leg in valid_routes[0].get('legs', []):
+            coordinates = []
+            for step in leg.get('steps', []):
+                coordinates.append([step['start_location']['lat'], step['start_location']['lng']])
+                coordinates.append([step['end_location']['lat'], step['end_location']['lng']])
+
+            # Add as a feature to the list
+            features.append({
                 "type": "Feature",
                 "geometry": {
                     "type": "LineString",
-                    "coordinates": [
-                        [-117.768524, 33.70186],
-                        [-117.768471, 33.701877],
-                        [-117.768429, 33.701911],
-                        [-117.768026, 33.702314],
-                        [-117.767803, 33.702449]
-                    ]
+                    "coordinates": coordinates
                 }
-            }
-        ]
-    })
+            })
+
+        # Format the response in a way that can be interpreted by your map
+        return jsonify({
+            "type": "FeatureCollection",
+            "features": features,
+            "invalid_routes": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                            [step['end_location']['lat'], step['end_location']['lng']]
+                            for leg in route.get('legs', [])
+                            for step in leg.get('steps', [])
+                        ]
+                    }
+                }
+                for route in invalid_routes
+            ],
+            "fires": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [fire[1], fire[0]]  # Longitude, Latitude
+                    }
+                }
+                for fire in fires
+            ]
+        }), 200
+    else:
+        logging.error("Unable to find a safe route.")
+        return jsonify({'error': 'Unable to find a safe route.'}), 500
+
+@app.route('/route_data', methods=['GET'])
+def route_data():
+    # Return cached route data if available
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'r') as cache_file:
+            return jsonify(json.load(cache_file))
+    else:
+        return jsonify({'error': 'No cached route data available.'}), 404
 
 @app.route('/')
 def index():
