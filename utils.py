@@ -61,3 +61,21 @@ def elevenlabs_tts(text, output_file, voice_id, stability=0.2, similarity_boost=
             time.sleep(1)  
 
     print(f"Failed to generate TTS after {retries} attempts.")
+    if fallback_text:
+        print(f"Using fallback text for transition: {fallback_text}")
+        fallback_data = {
+            "text": fallback_text,
+            "voice_settings": {
+                "stability": stability,
+                "similarity_boost": similarity_boost,
+                "model_version": "turbo_v2.5"
+            }
+        }
+        response = requests.post(url.format(voice_id=voice_id), headers=headers, json=fallback_data)
+        if response.status_code == 200:
+            with open(output_file, 'wb') as f:
+                f.write(response.content)
+            print(f"Saved fallback TTS to {output_file}")
+            return True
+
+    return False
