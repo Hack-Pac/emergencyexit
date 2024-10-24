@@ -10,6 +10,17 @@ BOOKING_COM_API_KEY = "<Your API Key Here>"
 TOGETHER_API_KEY = "<Your API Key Here>"
 
 
+
+prompt = """
+You will be generating a fire report with the following content. I will pass in information about a local fire, and
+you are to use that to generate a newscaster style report about that fire. Make sure to keep your responses simple and short
+but make sure to convey the entire report with the newscaster style.
+
+Never say that you couldnt generate the response. If you cannot generate a response, simply say "I'll be back after getting some
+more information"
+
+"""
+
 ai_client = Together(api_key=TOGETHER_API_KEY)
 
 
