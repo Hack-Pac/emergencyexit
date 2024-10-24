@@ -1,11 +1,17 @@
 import requests
 import json
 import time
+from together import Together
 
 
 # These API's are expensive, please add your own API keys. 
 ELEVEN_LABS_API_KEY = "<Your API Key Here>"
 BOOKING_COM_API_KEY = "<Your API Key Here>"
+TOGETHER_API_KEY = "<Your API Key Here>"
+
+
+ai_client = Together(api_key=TOGETHER_API_KEY)
+
 
 def searchHotels(checkin, checkout, localairport, guests, rooms):
     url = "https://demandapi.booking.com/3.1/accommodations/search"
@@ -79,3 +85,13 @@ def elevenlabs_tts(text, output_file, voice_id, stability=0.2, similarity_boost=
             return True
 
     return False
+
+def getFireReport(prompt, firedata):
+    resp = ai_client.chat.completions.create(
+        model="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+        messages = [
+            {"role":"assistant", "content":prompt},
+            {"role":"user", "content":firedata}
+        ]
+    )
+    return resp.choices[0].message.content
