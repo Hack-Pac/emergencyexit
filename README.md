@@ -1,3 +1,6 @@
+## NOTE FOR SCRAPYARD REVIEWERS:
+Our project is unable to be hosted live due to it requiring more compute than we have available to host 24/7. We have demos in the video, which is in the demo section of the form. Thank you! Please reach out with any questions.
+
 # Emergency Exit
 
 This project is a Python-based application that calculates safe routes to avoid areas with active fires. It uses OpenStreetMap data and the A* algorithm to dynamically reroute around active fire zones, making use of custom road networks stored in GraphML format.
